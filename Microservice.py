@@ -37,21 +37,23 @@ class Microservice:
 
         raise NotImplementedError("Failure function not implemented")
 
-    def random_time_to_failure_given_survival_time(self, t):
+    def _select_random_failure_time(self):
         """
-            Returns a random value from the distribution given the container has survived until t
-            t - local time
+            Uses the probability density function to select a randomised local failure time
         """
 
-        raise NotImplementedError("Random time to failure function not implemented")
+        raise NotImplementedError("Random Failure Function not implemented")
 
-    def spawn_container(self, t0=0, name=None):
+    def spawn_container(self, t0=None, name=None):
         """
             Spawns a new redundant container in the microservice
             t0 - the start time in global time
             name - optional name for the container, default will randomise
         """
-        container = MicroserviceContainer(self.failure_function, self.random_time_to_failure_given_survival_time, t0, name)
+        if t0 == None:
+            t0 = self._t0
+
+        container = MicroserviceContainer(self.failure_function, local_failure_time=self._select_random_failure_time(), t0=t0, name=name)
         self.containers.append(container)
         return container
 

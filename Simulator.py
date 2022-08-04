@@ -48,15 +48,11 @@ class Simulator:
             for container in microservice.containers:
                 if container.state == MicroserviceContainer.STATE_ACTIVE:
                     # If the container has failed, we do not ever change its state again
-                    # This container has not failed, so run an experiment to see if it fails in this interval
-                    probability_of_failure = container.probability_of_failure(self._t, self._sim_clock_step)
-                    # Give it a weighted choice between failure and active state
-                    res = random.choices([MicroserviceContainer.STATE_FAILED, MicroserviceContainer.STATE_ACTIVE],
-                                                      cum_weights=[probability_of_failure, 1])[0]
-                    if res == MicroserviceContainer.STATE_FAILED:
+                    # This container has not failed, so see if it is scheduled to fail this interval
+                    if container.global_to_local_time(self._t) + self._sim_clock_step >= container.local_failure_time:
                         container.state = MicroserviceContainer.STATE_FAILED
-                        self._failed_containers.append(container.global_to_local_time(self._t))
-                        self.print_trace(f"Container {container.name} failed at local time {container.global_to_local_time(self._t):.2f}.")
+                        self._failed_containers.append(container.local_failure_time)
+                        self.print_trace(f"Container {container.name} failed at local time {container.local_failure_time:.2f}.")
 
                     # Update the running cost of the container
                     self._running_cost += microservice.cost * self._sim_clock_step
@@ -80,7 +76,7 @@ class Simulator:
         for microservice in self.cloud.microservices:
             for container in microservice.containers:
                 if container.state == MicroserviceContainer.STATE_ACTIVE:
-                    self._failed_containers.append(container.random_time_to_failure_given_survival_time(self._t))
+                    self._failed_containers.append(container.local_failure_time)
 
     def print_trace(self, msg):
         if self._trace:

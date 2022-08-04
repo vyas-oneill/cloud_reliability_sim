@@ -12,7 +12,7 @@ from Simulator import *
 
 
 class ExponentialMicroservice(Microservice):
-    def random_time_to_failure_given_survival_time(self, t):
+    def _select_random_failure_time(self):
         # Exponential distribution does not require t
         return numpy.random.exponential(1, 1)[0]
 
@@ -37,7 +37,6 @@ class ExperimentalOrchestrator(Orchestrator):
         self.print_trace("Running orchestrator ...")
         super().orchestrate(cloud, t)
 
-        cost_incurred = 0
         while True:
             # The reliability of the cloud has dropped below the threshold level
             # Attempt to add redundant microservices
@@ -47,8 +46,6 @@ class ExperimentalOrchestrator(Orchestrator):
                 self.print_trace(f"Spawned new redundant container {new_container}.")
             else:
                 break
-
-        return cost_incurred
 
 class ControlOrchestrator(Orchestrator):
     def __init__(self, orchestrator_delta, cost_of_failure=1):
@@ -65,14 +62,12 @@ class ControlOrchestrator(Orchestrator):
         self.print_trace("Running orchestrator ...")
         super().orchestrate(cloud, t)
 
-        cost_incurred = 0
         for microservice in cloud.microservices:
             while microservice.probability_of_failure(t, self.orchestrator_delta) >= 0.01:
                 # The reliability of the microservice has dropped below the threshold level
                 # Attempt to add redundant microservices
                 new_container = microservice.spawn_container(t0=t)
                 self.print_trace(f"Spawned new redundant container {new_container}.")
-        return cost_incurred
 
 
 class NOPOrchestrator(Orchestrator):
@@ -84,7 +79,7 @@ class NOPOrchestrator(Orchestrator):
 
 def run_experiment(trace):
     cloud = Cloud([ExponentialMicroservice(num_containers=1, cost=5), ExponentialMicroservice(num_containers=1, cost=3)])
-    simulator = Simulator(orchestrator=ExperimentalOrchestrator(orchestrator_delta=.01, cost_of_failure=3000), cloud=cloud, sim_clock_step=0.01,
+    simulator = Simulator(orchestrator=ExperimentalOrchestrator(orchestrator_delta=.01, cost_of_failure=100000), cloud=cloud, sim_clock_step=0.01,
                           orchestrator_run_period=0.01, trace=trace)
 
     for i in range(0, 500):
