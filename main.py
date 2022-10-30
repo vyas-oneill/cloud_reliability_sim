@@ -9,6 +9,7 @@ from Cloud import *
 from Microservice import *
 from MicroserviceContainer import *
 from Simulator import *
+from SpotMarketProvider import *
 
 
 class ExponentialMicroservice(Microservice):
@@ -19,10 +20,12 @@ class ExponentialMicroservice(Microservice):
     def failure_function(self, t):
         return 1 - math.pow(math.e, -t)
 
-"""
-    The orchestrator's policy is to maintain the reliability of the system above 90 percent
-"""
+
 class ExperimentalOrchestrator(Orchestrator):
+    """
+        The orchestrator's policy is to maintain the reliability of the system above 90 percent
+    """
+
     def __init__(self, orchestrator_delta, cost_of_failure=1):
         """
             Creates a new orchestrator on the given cloud
@@ -46,6 +49,7 @@ class ExperimentalOrchestrator(Orchestrator):
                 self.print_trace(f"Spawned new redundant container {new_container}.")
             else:
                 break
+
 
 class ControlOrchestrator(Orchestrator):
     def __init__(self, orchestrator_delta, cost_of_failure=1):
@@ -77,21 +81,25 @@ class NOPOrchestrator(Orchestrator):
     def orchestrate(self, cloud, t):
         pass
 
+
 def run_experiment(trace):
-    cloud = Cloud([ExponentialMicroservice(num_containers=1, cost=5), ExponentialMicroservice(num_containers=1, cost=3)])
-    simulator = Simulator(orchestrator=ExperimentalOrchestrator(orchestrator_delta=.01, cost_of_failure=100000), cloud=cloud, sim_clock_step=0.01,
-                          orchestrator_run_period=0.01, trace=trace)
+    cloud = Cloud([ExponentialMicroservice(num_containers=10, cost=5), ExponentialMicroservice(num_containers=10, cost=3)])
+    #simulator = Simulator(orchestrator=ExperimentalOrchestrator(orchestrator_delta=.01, cost_of_failure=1000), cloud=cloud, sim_clock_step=0.01,
+    #                      orchestrator_run_period=0.01, trace=trace)
+    simulator = SpotMarketSimulator(orchestrator=SpotMarketOrchestrator(orchestrator_delta=.01, spot_market_provider=SpotMarketProvider()), cloud=cloud, sim_clock_step=0.01,
+                         orchestrator_run_period=0.01, trace=trace)
 
     for i in range(0, 500):
         simulator.iterate()
         p_failure = cloud.probability_of_failure(simulator._t, simulator._sim_clock_step)
 
         if trace:
-            print(f"[{i}] (t={simulator._t:.2f}s): [P(failure)={p_failure}] {str(cloud)}")
+            print(f"[{i}] (t={simulator._t:.2f}s): [P(failure)={p_failure}, FC={simulator.orchestrator._spot_market_provider._cost_of_failure_per_second(simulator._t)}] {str(cloud)}")
 
     simulator.finalize()
 
     return simulator
+
 
 def main():
     output_file = None
@@ -102,9 +110,10 @@ def main():
     container_failure_times = []
     running_costs = []
     actual_costs_of_failure = []
-    trace = False
+    trace = True
+    num_experiments = 1
 
-    for x in range(1000):
+    for x in range(num_experiments):
         print(f"Experiment {x}")
         simulator = run_experiment(trace)
 

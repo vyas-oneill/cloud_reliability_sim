@@ -5,7 +5,7 @@ import copy
 class Orchestrator:
     def __init__(self, cost_of_failure=0, trace=False):
         self._trace = trace
-        self._cost_of_failure = 0
+        self._cost_of_failure = cost_of_failure
 
     def _remove_failed_containers(self, cloud):
         """
@@ -21,6 +21,15 @@ class Orchestrator:
                     self.print_trace(f"Removed {container} from the cloud due to failure.")
 
             microservice.containers = new_containers
+
+    def _ensure_at_least_one_container(self, cloud, t):
+        """
+            Ensures that the cloud contains at least one container in each microservice
+        """
+        for microservice in cloud.microservices:
+            if len(microservice.containers) == 0:
+                microservice.spawn_container(t0=t)
+                self.print_trace(f"Microservice {microservice} was in a failure state. Spawned one container.")
 
     def select_microservice_for_redundancy(self, cloud, t, delta):
         """

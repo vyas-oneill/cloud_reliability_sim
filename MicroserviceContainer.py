@@ -29,7 +29,7 @@ class MicroserviceContainer:
 
     def probability_of_failure(self, t, delta):
         """
-            Returns the probability that the container will fail in the giv+en interval [t, t+delta]
+            Returns the probability that the container will fail in the given interval [t, t+delta]
             A failed container will always return 1
             t - global time
             delta - size of the interval

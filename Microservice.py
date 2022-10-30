@@ -57,6 +57,13 @@ class Microservice:
         self.containers.append(container)
         return container
 
+    def remove_container(self, index):
+        """
+            Removes the container at the specified index
+            Returns the removed container
+        """
+        return self.containers.pop(index)
+
     def probability_of_failure(self, t, delta):
         """
             Returns the value of the failure function for the microservice
@@ -71,7 +78,7 @@ class Microservice:
     def __str__(self):
         s = self.__class__.__name__ + "::" + self.name + f" (Cost={self.cost}): "
         if len(self.containers) > 0:
-             s += ", ".join(str(x) for x in self.containers)
+            s += ", ".join(str(x) for x in self.containers)
         else:
             s += "No containers"
         return s
